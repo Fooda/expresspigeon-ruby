@@ -3,7 +3,12 @@
 .idea/
 
 
-rspec.sh
+scripts/*
+
 set_env
 
 *.txt
+
+test/*
+
+expresspigeon-ruby-*.gem

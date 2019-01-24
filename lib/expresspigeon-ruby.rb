@@ -8,7 +8,9 @@ require 'rest_client'
 module ExpressPigeon
 
   AUTH_KEY = ENV['EXPRESSPIGEON_AUTH_KEY']
-  ROOT = 'https://api.expresspigeon.com/'
+
+  # EXPRESSPIGEON_ROOT env var is used to point to testenv
+  ROOT =  ENV.has_key?('EXPRESSPIGEON_ROOT') ? ENV['EXPRESSPIGEON_ROOT'] : 'https://api.expresspigeon.com/'
   USE_SSL = true
 
   module API
@@ -76,11 +78,16 @@ module ExpressPigeon
         ) do |http|
           http.request req
         end
-        parsed = JSON.parse(resp.body)
-        if parsed.kind_of? Hash
-          MetaResponse.new parsed
+
+        if resp.content_type == 'application/json'
+          parsed = JSON.parse(resp.body)
+          if parsed.kind_of? Hash
+            MetaResponse.new parsed
+          else
+            parsed
+          end
         else
-          parsed
+          resp.body
         end
       end
     end
@@ -121,7 +128,7 @@ module ExpressPigeon
       Messages.new
     end
 
-    def self.auto_responders
+    def self.autoresponders
       AutoResponders.new
     end
 

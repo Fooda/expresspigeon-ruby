@@ -6,25 +6,25 @@ describe 'transactional messages integration test' do
   include PigeonSpecHelper
 
   #def test_sending_message_and_report_without_params(self):
-  #    res = self.api.messages.send_message(template_id=-1, to="", reply_to="", from_name="", subject="")
+  #    res = self.api.messages.send_message(template_id=-1, to="", reply_to="", from="", subject="")
   #    self.assertEqual(res.code, 400)
   #    self.assertEqual(res.status, "error")
   #    self.assertEqual(res.message, "Required fields: template_id, reply_to, from, to, and subject")
   #
   #def test_sending_message_and_report_with_wrong_email_in_to(self):
-  #    res = self.api.messages.send_message(template_id=-1, to="e", reply_to="a@a.a", from_name="me", subject="Hi")
+  #    res = self.api.messages.send_message(template_id=-1, to="e", reply_to="a@a.a", from="me", subject="Hi")
   #    self.assertEqual(res.code, 400)
   #    self.assertEqual(res.status, "error")
   #    self.assertEqual(res.message, "Email in the 'to' field is not valid")
   #
   #def test_sending_message_and_report_with_wrong_email_in_reply_to(self):
-  #    res = self.api.messages.send_message(template_id=-1, to="e@e.e", reply_to="a", from_name="me", subject="Hi")
+  #    res = self.api.messages.send_message(template_id=-1, to="e@e.e", reply_to="a", from="me", subject="Hi")
   #    self.assertEqual(res.code, 400)
   #    self.assertEqual(res.status, "error")
   #    self.assertEqual(res.message, "Email in the 'reply_to' field is not valid")
   #
   #def test_sending_message_and_report_with_wrong_template_id(self):
-  #    res = self.api.messages.send_message(template_id=-1, to="e@e.e", reply_to="a@a.a", from_name="me", subject="Hi")
+  #    res = self.api.messages.send_message(template_id=-1, to="e@e.e", reply_to="a@a.a", from="me", subject="Hi")
   #    self.assertEqual(res.code, 400)
   #    self.assertEqual(res.status, "error")
   #    self.assertEqual(res.message, "template=-1 not found")
@@ -32,10 +32,10 @@ describe 'transactional messages integration test' do
 
   #TODO: complete the spec
   it 'sends a single transactional message' do
-    message_response = PIGEON.messages.send_message 115, ENV['TARGET_EMAIL'], ENV['TARGET_EMAIL'], "Team ExpressPigeon", "Hi there!",
-                                                    :first_name => "Igor"
+    message_response = ExpressPigeon::API.messages.send_message 115, ENV['TARGET_EMAIL'], ENV['TARGET_EMAIL'], "Team ExpressPigeon", "Hi there!",
+                                                              :first_name => "Igor"
     validate_response message_response, 200, 'success', /email queued/
-    report = PIGEON.messages.report(message_response.id)
+    report = ExpressPigeon::API.messages.report(message_response.id)
     report.id.should eq message_response.id
   end
 
@@ -62,7 +62,7 @@ describe 'transactional messages integration test' do
   #def test_sending_multiple_messages_and_get_reports(self):
   #    message_response = self.api.messages.send_message(template_id=self.template_id,
   #                                                      to=os.environ['EXPRESSPIGEON_API_USER'],
-  #                                                      reply_to="a@a.a", from_name="me", subject="Hi",
+  #                                                      reply_to="a@a.a", from="me", subject="Hi",
   #                                                      merge_fields={"first_name": "Gleb"})
   #    self.assertEqual(message_response.code, 200)
   #    self.assertEqual(message_response.status, "success")
@@ -71,7 +71,7 @@ describe 'transactional messages integration test' do
   #
   #    message_response_2 = self.api.messages.send_message(template_id=self.template_id,
   #                                                        to=os.environ['EXPRESSPIGEON_API_USER'],
-  #                                                        reply_to="a@a.a", from_name="me", subject="Hi 2",
+  #                                                        reply_to="a@a.a", from="me", subject="Hi 2",
   #                                                        merge_fields={"first_name": "Gleb"})
   #    self.assertEqual(message_response_2.code, 200)
   #    self.assertEqual(message_response_2.status, "success")
@@ -90,23 +90,23 @@ describe 'transactional messages integration test' do
   #    self.assertEquals(report2.email, os.environ['EXPRESSPIGEON_API_USER'])
   #    self.assertTrue(report2.in_transit is not None)
   #
-  it 'test_sending_multiple_messages_and_get_reports_for_today(self):' do
+  it 'should send multiple messages and get reports for today' do
 
     start = Time.now.utc - 60 # one minute ago
 
-    message_response = PIGEON.messages.send_message 4905, ENV['TARGET_EMAIL'], ENV['TARGET_EMAIL'],
-                                                    'Team EP', "Hi, there!", :first_name => "Bob"
+    message_response = ExpressPigeon::API.messages.send_message 4905, ENV['TARGET_EMAIL'], ENV['TARGET_EMAIL'],
+                                                              'Team EP', "Hi, there!", :first_name => "Bob"
 
     validate_response message_response, 200, 'success', /email queued/
     message_response.id should_not be_nil
 
-    message_response2 = PIGEON.messages.send_message 4905, ENV['TARGET_EMAIL'], ENV['TARGET_EMAIL'],
-                                                     'Team EP', "Hi, there!", :first_name => "Bob"
+    message_response2 = ExpressPigeon::API.messages.send_message 4905, ENV['TARGET_EMAIL'], ENV['TARGET_EMAIL'],
+                                                               'Team EP', "Hi, there!", :first_name => "Bob"
     validate_response message_response2, 200, 'success', /email queued/
     message_response2.id should_not be_nil
 
     finish = start + 120 # two minutes after start
-    reports = PIGEON.messages.reports (message_response.id - 1), start, finish
+    reports = ExpressPigeon::API.messages.reports (message_response.id - 1), start, finish
 
     reports.size.should eq 2
     reports[0]['id'].should eq message_response.id
@@ -115,6 +115,8 @@ describe 'transactional messages integration test' do
     reports[0]['email'].should eq ENV['TARGET_EMAIL']
     reports[1]['email'].should eq ENV['TARGET_EMAIL']
   end
+
+
   #
   #def __get_report_by_id__(self, message_id, start_date=None, end_date=None):
   #    reports = self.api.messages.reports() if start_date is None and end_date is None else \
@@ -124,4 +126,35 @@ describe 'transactional messages integration test' do
   #    return report[0]
 
 
+  it 'should prepare payload hash' do
+
+     payload = ExpressPigeon::API.messages.prepare_payload(123, #template_id
+                                                         'john@doe.com',
+                                                         'jane@doe.com',
+                                                         'Jane Doe',
+                                                         'Hello, Dolly!',
+                                                         {eye_color: 'blue', body_shape:'pear'},
+                                                         false, true, false,
+                                                         %w(spec/resources/attachment1.txt spec/resources/attachment2.txt), {}, nil, nil)
+
+     payload[:multipart].should eq true
+     payload[:template_id].should eq 123
+     payload[:to].should eq 'john@doe.com'
+     payload[:reply_to].should eq 'jane@doe.com'
+     payload[:from].should eq 'Jane Doe'
+     payload[:subject].should eq 'Hello, Dolly!'
+     payload[:template_id].should eq 123
+     payload[:view_online].should eq false
+     payload[:click_tracking].should eq true
+     payload[:suppress_address].should eq false
+     payload['attachment1.txt'].class.should eq File
+
+     payload[:merge_fields].class.should eq String
+     merge_fields = JSON.parse payload[:merge_fields]
+     merge_fields['eye_color'].should eq "blue"
+     merge_fields['body_shape'].should eq "pear"
+
+     File.basename(payload['attachment1.txt']).should eq 'attachment1.txt'
+     File.basename(payload['attachment2.txt']).should eq 'attachment2.txt'
+  end
 end
